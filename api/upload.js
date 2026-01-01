@@ -10,31 +10,41 @@ export default async function handler(req, res) {
 
   const form = new formidable.IncomingForm();
 
+  // Parse form data
   form.parse(req, async (err, fields, files) => {
     if (err) {
       console.error('Form parse error:', err);
-      return res.status(500).json({ error: 'Failed to parse files' });
+      return res.status(500).json({
+        error: 'Failed to parse files',
+        details: err.message, // <--- now sends real error
+      });
     }
 
     try {
-      // Ensure all required files exist
+      // Check for all required files
       const requiredFiles = ['hsx', 'js', 'html', 'test', 'success'];
       for (const key of requiredFiles) {
         if (!files[key]) {
+          console.error(`Missing file: ${key}`);
           return res.status(400).json({ error: `Missing file: ${key}` });
         }
       }
 
-      // Helper function to upload each file
+      // Helper to upload file to Supabase storage
       const uploadFile = async (file, folder) => {
-        const { data, error } = await supabase.storage
-          .from('extensions')
-          .upload(`${folder}/${file.originalFilename}`, file.filepath, { upsert: true });
-        if (error) throw error;
-        return data.path;
+        try {
+          const { data, error } = await supabase.storage
+            .from('extensions')
+            .upload(`${folder}/${file.originalFilename}`, file.filepath, { upsert: true });
+          if (error) throw error;
+          return data.path;
+        } catch (uploadErr) {
+          console.error(`Supabase upload error (${folder}/${file.originalFilename}):`, uploadErr);
+          throw uploadErr;
+        }
       };
 
-      // Upload files
+      // Upload each file
       const hsxUrl = await uploadFile(files.hsx, 'hsx');
       const jsUrl = await uploadFile(files.js, 'js');
       const htmlUrl = await uploadFile(files.html, 'html');
@@ -55,12 +65,21 @@ export default async function handler(req, res) {
         },
       ]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase DB insert error:', error);
+        throw error;
+      }
 
+      // Success response
       res.status(200).json({ message: 'Uploaded successfully', data });
+
     } catch (uploadError) {
-      console.error('Upload error:', uploadError);
-      res.status(500).json({ error: 'Upload failed', details: uploadError.message });
+      console.error('Upload handler error:', uploadError);
+      res.status(500).json({
+        error: 'Upload failed',
+        message: uploadError.message,       // real error message
+        stack: uploadError.stack,           // stack trace for debugging
+      });
     }
   });
 }
