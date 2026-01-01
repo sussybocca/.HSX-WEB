@@ -2,6 +2,7 @@
   "name": "hsx-site",
   "version": "1.0.0",
   "description": ".HSX website with Vercel serverless functions",
+  "type": "module",
   "main": "index.js",
   "engines": {
     "node": ">=18.0.0"
@@ -12,6 +13,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
-    "formidable-serverless": "1.1.1"
+    "formidable-serverless": "1.1.1",
+    "node-fetch": "^3.3.2"
   }
 }
