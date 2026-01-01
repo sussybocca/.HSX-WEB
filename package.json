@@ -12,7 +12,7 @@
     "start": "vercel start"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.33.0",
+    "@supabase/supabase-js": "^2.89.0",
     "formidable-serverless": "1.1.1"
   }
 }
