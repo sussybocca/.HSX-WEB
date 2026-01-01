@@ -8,9 +8,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // ===== FIXED: Make Formidable stable on Vercel =====
+  // ===== Formidable setup =====
   const form = new formidable.IncomingForm({
-    multiples: false,     // don't allow multiple files per input
+    multiples: false,     // only one file per input
     keepExtensions: true, // preserve file extensions
   });
 
@@ -19,12 +19,12 @@ export default async function handler(req, res) {
       console.error('Form parse error:', err);
       return res.status(500).json({
         error: 'Failed to parse files',
-        details: err.message, // sends the real error
+        details: err.message,
       });
     }
 
     try {
-      // ===== CHECK: all required files exist =====
+      // ===== Check all required files exist =====
       const requiredFiles = ['hsx', 'js', 'html', 'test', 'success'];
       for (const key of requiredFiles) {
         if (!files[key]) {
@@ -33,19 +33,21 @@ export default async function handler(req, res) {
         }
       }
 
-      // ===== Helper to upload a file to Supabase =====
+      // ===== Helper: get safe filename =====
+      const getFilename = (file) =>
+        file.originalFilename || file.newFilename || file.name;
+
+      // ===== Helper: upload file to Supabase =====
       const uploadFile = async (file, folder) => {
-        if (!file.originalFilename) {
-          throw new Error(`File ${folder} has no originalFilename`);
-        }
+        const filename = getFilename(file);
         const { data, error } = await supabase.storage
           .from('extensions')
-          .upload(`${folder}/${file.originalFilename}`, file.filepath, { upsert: true });
+          .upload(`${folder}/${filename}`, file.filepath, { upsert: true });
         if (error) throw error;
         return data.path;
       };
 
-      // ===== Upload each file =====
+      // ===== Upload all files =====
       const hsxUrl = await uploadFile(files.hsx, 'hsx');
       const jsUrl = await uploadFile(files.js, 'js');
       const htmlUrl = await uploadFile(files.html, 'html');
@@ -55,7 +57,7 @@ export default async function handler(req, res) {
       // ===== Insert into Supabase DB =====
       const { data, error } = await supabase.from('extensions').insert([
         {
-          name: files.hsx.originalFilename.replace('.hsx', ''),
+          name: getFilename(files.hsx).replace('.hsx', ''),
           author: fields.author || 'Anonymous',
           hsx_url: hsxUrl,
           js_url: jsUrl,
@@ -71,15 +73,14 @@ export default async function handler(req, res) {
         throw error;
       }
 
-      // ===== Success response =====
       res.status(200).json({ message: 'Uploaded successfully', data });
 
     } catch (uploadError) {
       console.error('Upload handler error:', uploadError);
       res.status(500).json({
         error: 'Upload failed',
-        message: uploadError.message, // real error message
-        stack: uploadError.stack,     // full stack trace
+        message: uploadError.message,
+        stack: uploadError.stack,
       });
     }
   });
