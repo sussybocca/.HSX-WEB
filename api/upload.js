@@ -32,17 +32,20 @@ export default async function handler(req, res) {
 
       const name = f => f.originalFilename || f.newFilename || f.name
 
-      // ---------- VirusTotal Scan (using FormData and fs/promises) ----------
+      // Helper to get buffer from file
+      async function getFileBuffer(file) {
+        if (file.filepath) return await readFile(file.filepath) // disk fallback
+        if (file._data) return file._data // in-memory buffer
+        throw new Error(`No data found for file ${name(file)}`)
+      }
+
+      // ---------- VirusTotal Scan ----------
       async function scanWithVirusTotal(file) {
         try {
-          // Read file as buffer
-          const buffer = await readFile(file.filepath)
-
-          // Build multipart/form-data
+          const buffer = await getFileBuffer(file)
           const formData = new FormData()
           formData.append('file', buffer, { filename: name(file) })
 
-          // Upload file
           const upload = await fetch('https://www.virustotal.com/api/v3/files', {
             method: 'POST',
             headers: { 'x-apikey': VT_KEY, ...formData.getHeaders() },
@@ -57,7 +60,6 @@ export default async function handler(req, res) {
           const { data } = await upload.json()
           const id = data.id
 
-          // Poll for analysis
           while (true) {
             const poll = await fetch(`https://www.virustotal.com/api/v3/analyses/${id}`, {
               headers: { 'x-apikey': VT_KEY }
@@ -106,10 +108,11 @@ export default async function handler(req, res) {
 
       if (safe) {
         const upload = async (file, folder) => {
+          const buffer = await getFileBuffer(file)
           try {
             const { data, error } = await supabase.storage
               .from('extensions')
-              .upload(`${folder}/${name(file)}`, file.filepath, { upsert: true })
+              .upload(`${folder}/${name(file)}`, buffer, { upsert: true })
             if (error) throw error
             return data.path
           } catch (e) {
