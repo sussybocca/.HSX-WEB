@@ -1,29 +1,18 @@
 {
-  "name": "hsx-website",
+  "name": "hsx-site",
   "version": "1.0.0",
-  "description": "Website for .HSX language extensions with backend API on Vercel and Supabase integration",
+  "description": ".HSX website with Vercel serverless functions",
   "main": "index.js",
-  "scripts": {
-    "dev": "vercel dev",
-    "start": "vercel dev",
-    "build": "echo 'Vercel handles build automatically'"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.7.1",
-    "formidable-serverless": "^1.3.0"
-  },
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": [
-    "hsx",
-    "language",
-    "extensions",
-    "vercel",
-    "supabase",
-    "runtime",
-    "compiler"
-  ],
-  "author": "William Isaiah Jones",
-  "license": "MIT"
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "start": "vercel start"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.33.0",
+    "formidable-serverless": "1.1.1"
+  }
 }
