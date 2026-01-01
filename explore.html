@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>.HSX - Explore</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="supabase.js" defer></script>
-  <script src="extensions.js" defer></script>
 </head>
 <body class="bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-500 min-h-screen font-sans text-white">
+  <!-- Navbar -->
   <nav class="flex justify-between items-center p-6 bg-black/30 backdrop-blur-md">
     <h1 class="text-2xl font-bold">.HSX Language</h1>
     <div class="space-x-4">
@@ -17,6 +16,7 @@
     </div>
   </nav>
 
+  <!-- Extensions Grid -->
   <section class="mt-16 px-6">
     <h2 class="text-3xl font-bold mb-8 text-center">Explore Extensions</h2>
     <div id="extensionsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -27,5 +27,48 @@
   <footer class="text-center py-6 text-gray-300 mt-12">
     © 2026 William Isaiah Jones | .HSX
   </footer>
+
+  <!-- Inline script to fetch extensions and create download buttons -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const grid = document.getElementById('extensionsGrid');
+
+      try {
+        // Fetch approved extensions from your serverless function
+        const res = await fetch('/api/extensions');
+        if (!res.ok) throw new Error('Failed to fetch extensions');
+        const exts = await res.json();
+
+        exts.forEach(ext => {
+          const card = document.createElement('div');
+          card.className = "bg-black/20 backdrop-blur-md rounded-xl p-6 hover:scale-105 transition transform";
+
+          card.innerHTML = `
+            <h3 class="text-xl font-bold mb-2">${ext.name}</h3>
+            <p class="text-gray-300 mb-4">By: ${ext.author}</p>
+            <button class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-500 download-btn">Download</button>
+          `;
+
+          // Download all files on button click
+          card.querySelector('.download-btn').addEventListener('click', () => {
+            [ext.hsx_url, ext.js_url, ext.html_url].forEach(url => {
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = url.split('/').pop();
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            });
+          });
+
+          grid.appendChild(card);
+        });
+
+      } catch (err) {
+        console.error(err);
+        grid.innerHTML = "<p class='text-red-400 text-center'>Failed to load extensions. Try again later.</p>";
+      }
+    });
+  </script>
 </body>
 </html>
