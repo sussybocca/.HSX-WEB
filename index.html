@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>.HSX - Home</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="supabase.js" defer></script>
-  <script src="extensions.js" defer></script>
 </head>
 <body class="bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-500 min-h-screen font-sans text-white">
   <!-- Navbar -->
@@ -25,9 +23,8 @@
       The custom language for browser & backend. Download our runtime or compiler and start building extensions!
     </p>
 
-    <div class="flex justify-center gap-6 mb-12">
-      <a href="runtime.js" download class="bg-yellow-400 text-black px-6 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition">Download Runtime.js</a>
-      <a href="compiler.js" download class="bg-green-400 text-black px-6 py-3 rounded-lg font-semibold hover:bg-green-300 transition">Download Compiler.js</a>
+    <div class="flex justify-center gap-6 mb-12" id="downloadLinks">
+      <!-- Runtime.js and Compiler.js will be added dynamically from /api/files -->
     </div>
   </section>
 
@@ -60,5 +57,82 @@
   <footer class="text-center py-6 text-gray-300">
     © 2026 William Isaiah Jones | .HSX
   </footer>
+
+  <!-- Scripts -->
+  <script>
+    // =========================
+    // Fetch and display download links for runtime.js / compiler.js
+    // =========================
+    async function loadDownloads() {
+      const container = document.getElementById('downloadLinks');
+      // In your Vercel setup, these are static, but we can dynamically generate links
+      const files = [
+        { name: 'Runtime.js', url: '/runtime.js', color: 'yellow' },
+        { name: 'Compiler.js', url: '/compiler.js', color: 'green' }
+      ];
+
+      files.forEach(file => {
+        const a = document.createElement('a');
+        a.href = file.url;
+        a.download = file.url.split('/').pop();
+        a.className = `bg-${file.color}-400 text-black px-6 py-3 rounded-lg font-semibold hover:bg-${file.color}-300 transition`;
+        a.textContent = `Download ${file.name}`;
+        container.appendChild(a);
+      });
+    }
+
+    // =========================
+    // Upload Extension
+    // =========================
+    async function uploadExtension(files) {
+      try {
+        const formData = new FormData();
+        formData.append('hsx', files.hsx);
+        formData.append('js', files.js);
+        formData.append('html', files.html);
+        formData.append('test', files.test);
+        formData.append('success', files.success);
+
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        return data;
+      } catch (err) {
+        console.error(err);
+        return null;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDownloads();
+
+      const form = document.getElementById('uploadForm');
+      const message = document.getElementById('uploadMessage');
+
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const files = {
+          hsx: document.getElementById('hsxFile').files[0],
+          js: document.getElementById('jsFile').files[0],
+          html: document.getElementById('htmlFile').files[0],
+          test: document.getElementById('testFile').files[0],
+          success: document.getElementById('successFile').files[0],
+        };
+
+        message.textContent = "Uploading...";
+        const result = await uploadExtension(files);
+        if (result) {
+          message.textContent = "Extension uploaded successfully! Awaiting review.";
+          form.reset();
+        } else {
+          message.textContent = "Failed to upload extension. Check console for errors.";
+        }
+      });
+    });
+  </script>
 </body>
 </html>
