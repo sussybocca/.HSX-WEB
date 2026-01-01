@@ -43,7 +43,7 @@
 <!-- Upload Section -->
 <section class="bg-black/20 backdrop-blur-md rounded-xl mx-6 p-8 mb-12">
   <h3 class="text-2xl font-bold mb-4">Upload Your Extension</h3>
-  <form id="uploadForm" class="flex flex-col gap-4">
+<form id="uploadForm" class="flex flex-col gap-4" enctype="multipart/form-data">
     <!-- Added "name" attributes matching server-side keys -->
     <input type="file" id="hsxFile" name="hsx" accept=".hsx" required class="p-2 rounded bg-gray-800 text-white">
     <input type="file" id="jsFile" name="js" accept=".js" required class="p-2 rounded bg-gray-800 text-white">
