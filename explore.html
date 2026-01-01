@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>.HSX - Explore</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Include JSZip library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-500 min-h-screen font-sans text-white">
   <!-- Navbar -->
@@ -28,13 +30,11 @@
     © 2026 William Isaiah Jones | .HSX
   </footer>
 
-  <!-- Inline script to fetch extensions and create download buttons -->
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const grid = document.getElementById('extensionsGrid');
 
       try {
-        // Fetch approved extensions from your serverless function
         const res = await fetch('/api/extensions');
         if (!res.ok) throw new Error('Failed to fetch extensions');
         const exts = await res.json();
@@ -46,19 +46,40 @@
           card.innerHTML = `
             <h3 class="text-xl font-bold mb-2">${ext.name}</h3>
             <p class="text-gray-300 mb-4">By: ${ext.author}</p>
-            <button class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-500 download-btn">Download</button>
+            <button class="bg-purple-600 px-4 py-2 rounded hover:bg-purple-500 download-btn">Download ZIP</button>
           `;
 
-          // Download all files on button click
-          card.querySelector('.download-btn').addEventListener('click', () => {
-            [ext.hsx_url, ext.js_url, ext.html_url].forEach(url => {
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = url.split('/').pop();
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-            });
+          card.querySelector('.download-btn').addEventListener('click', async () => {
+            const zip = new JSZip();
+
+            // Fetch each file as blob and add to zip
+            const files = [
+              { url: ext.hsx_url, name: ext.hsx_url?.split('/').pop() },
+              { url: ext.js_url, name: ext.js_url?.split('/').pop() },
+              { url: ext.html_url, name: ext.html_url?.split('/').pop() },
+              { url: ext.test_url, name: ext.test_url?.split('/').pop() },
+              { url: ext.success_url, name: ext.success_url?.split('/').pop() }
+            ];
+
+            for (const file of files) {
+              if (!file.url) continue;
+              try {
+                const response = await fetch(file.url);
+                const blob = await response.blob();
+                zip.file(file.name, blob);
+              } catch (err) {
+                console.warn(`Failed to fetch ${file.name}:`, err);
+              }
+            }
+
+            // Generate ZIP and trigger download
+            const content = await zip.generateAsync({ type: 'blob' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(content);
+            a.download = `${ext.name}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
           });
 
           grid.appendChild(card);
