@@ -1,13 +1,16 @@
 import formidable from 'formidable-serverless'
 import supabase from './supabase.js'
 import fetch from 'node-fetch'
+import FormData from 'form-data'
+import { readFile } from 'node:fs/promises'
 
 export const config = { api: { bodyParser: false } }
 
 const VT_KEY = process.env.VIRUSTOTAL_API_KEY
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  if (req.method !== 'POST')
+    return res.status(405).json({ error: 'Method not allowed' })
 
   const form = new formidable.IncomingForm({ multiples: false, keepExtensions: true })
 
@@ -29,13 +32,21 @@ export default async function handler(req, res) {
 
       const name = f => f.originalFilename || f.newFilename || f.name
 
-      // ---------- VirusTotal Scan ----------
+      // ---------- VirusTotal Scan (using FormData and fs/promises) ----------
       async function scanWithVirusTotal(file) {
         try {
+          // Read file as buffer
+          const buffer = await readFile(file.filepath)
+
+          // Build multipart/form-data
+          const formData = new FormData()
+          formData.append('file', buffer, { filename: name(file) })
+
+          // Upload file
           const upload = await fetch('https://www.virustotal.com/api/v3/files', {
             method: 'POST',
-            headers: { 'x-apikey': VT_KEY },
-            body: file
+            headers: { 'x-apikey': VT_KEY, ...formData.getHeaders() },
+            body: formData
           })
 
           if (!upload.ok) {
@@ -62,8 +73,6 @@ export default async function handler(req, res) {
               const stats = json.data.attributes.stats
               return stats.malicious === 0 && stats.suspicious === 0
             }
-
-            // Wait before polling again
             await new Promise(r => setTimeout(r, 2500))
           }
         } catch (e) {
@@ -84,7 +93,7 @@ export default async function handler(req, res) {
           }
         } catch (e) {
           console.error(`Error scanning ${k}:`, e)
-          throw e // re-throw so we catch below
+          throw e
         }
       }
 
@@ -116,7 +125,6 @@ export default async function handler(req, res) {
         record.success_url = await upload(files.success, 'success')
       }
 
-      // Insert record
       const { data, error } = await supabase.from('extensions').insert([record])
       if (error) {
         console.error('Supabase DB insert error:', error)
@@ -124,15 +132,9 @@ export default async function handler(req, res) {
       }
 
       res.json({ message: safe ? 'Uploaded successfully' : 'Malicious content blocked', data })
-
     } catch (e) {
-      // Return **full details for debugging**
       console.error('Handler caught error:', e)
-      res.status(500).json({
-        error: 'Upload failed',
-        message: e.message,
-        stack: e.stack
-      })
+      res.status(500).json({ error: 'Upload failed', message: e.message, stack: e.stack })
     }
   })
 }
