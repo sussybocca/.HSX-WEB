@@ -40,23 +40,25 @@
     </ol>
   </section>
 
-  <!-- Upload Section -->
-  <section class="bg-black/20 backdrop-blur-md rounded-xl mx-6 p-8 mb-12">
-    <h3 class="text-2xl font-bold mb-4">Upload Your Extension</h3>
-    <form id="uploadForm" class="flex flex-col gap-4">
-      <input type="file" id="hsxFile" accept=".hsx" required class="p-2 rounded bg-gray-800 text-white">
-      <input type="file" id="jsFile" accept=".js" required class="p-2 rounded bg-gray-800 text-white">
-      <input type="file" id="htmlFile" accept=".html" required class="p-2 rounded bg-gray-800 text-white">
-      <input type="file" id="testFile" accept=".txt" required class="p-2 rounded bg-gray-800 text-white">
-      <input type="file" id="successFile" accept=".txt" required class="p-2 rounded bg-gray-800 text-white">
-      <button type="submit" class="bg-purple-600 hover:bg-purple-500 transition py-3 rounded font-semibold">Upload Extension</button>
-    </form>
-    <p id="uploadMessage" class="mt-2 text-yellow-300 font-semibold"></p>
-  </section>
+<!-- Upload Section -->
+<section class="bg-black/20 backdrop-blur-md rounded-xl mx-6 p-8 mb-12">
+  <h3 class="text-2xl font-bold mb-4">Upload Your Extension</h3>
+  <form id="uploadForm" class="flex flex-col gap-4">
+    <!-- Added "name" attributes matching server-side keys -->
+    <input type="file" id="hsxFile" name="hsx" accept=".hsx" required class="p-2 rounded bg-gray-800 text-white">
+    <input type="file" id="jsFile" name="js" accept=".js" required class="p-2 rounded bg-gray-800 text-white">
+    <input type="file" id="htmlFile" name="html" accept=".html" required class="p-2 rounded bg-gray-800 text-white">
+    <input type="file" id="testFile" name="test" accept=".txt" required class="p-2 rounded bg-gray-800 text-white">
+    <input type="file" id="successFile" name="success" accept=".txt" required class="p-2 rounded bg-gray-800 text-white">
+    <button type="submit" class="bg-purple-600 hover:bg-purple-500 transition py-3 rounded font-semibold">Upload Extension</button>
+  </form>
+  <p id="uploadMessage" class="mt-2 text-yellow-300 font-semibold"></p>
+</section>
 
-  <footer class="text-center py-6 text-gray-300">
-    © 2026 William Isaiah Jones | .HSX
-  </footer>
+<footer class="text-center py-6 text-gray-300">
+  © 2026 William Isaiah Jones | .HSX
+</footer>
+
 
   <!-- Scripts -->
   <script>
